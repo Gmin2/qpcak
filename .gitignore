@@ -8,4 +8,6 @@ wasm/target/
 .DS_Store
 *.log
 engine/target/
+engine/pkg/
+engine/pkg-node/
 parity/target/

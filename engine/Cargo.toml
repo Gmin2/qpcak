@@ -5,9 +5,15 @@ edition = "2021"
 description = "Browser/WASM vector search runtime with TurboQuant compression"
 
 [lib]
-crate-type = ["rlib"]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+wasm = ["dep:wasm-bindgen", "dep:js-sys"]
 
 [dependencies]
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
 
 [profile.release]
 opt-level = "s"
