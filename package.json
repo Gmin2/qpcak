@@ -1,0 +1,44 @@
+{
+  "name": "qpack",
+  "version": "0.0.1",
+  "description": "Embeddable, backend-free AI search & chat for any site. Index content into a tiny Qdrant-powered pack; search it locally in the browser.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./build": {
+      "types": "./dist/build.d.ts",
+      "import": "./dist/build.js"
+    },
+    "./widget": {
+      "types": "./dist/widget.d.ts",
+      "import": "./dist/widget.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "qdrant",
+    "vector-search",
+    "semantic-search",
+    "embeddings",
+    "rag",
+    "chatbot",
+    "browser",
+    "offline",
+    "turboquant"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}
