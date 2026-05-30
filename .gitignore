@@ -7,3 +7,4 @@ wasm/target/
 .pnpm-store/
 .DS_Store
 *.log
+engine/target/

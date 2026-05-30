@@ -1,0 +1,14 @@
+[package]
+name = "qpack-engine"
+version = "0.1.0"
+edition = "2021"
+description = "Browser/WASM vector search runtime with TurboQuant compression"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+
+[profile.release]
+opt-level = "s"
+lto = true
