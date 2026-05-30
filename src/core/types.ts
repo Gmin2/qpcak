@@ -1,5 +1,5 @@
-/** Vector encoding inside a pack. f32 first; int8/turboquant added in Step 6. */
-export type VectorFormat = "f32" | "int8" | "tq4" | "tq2";
+/** Vector encoding inside a pack: f32 baseline, int8 scalar, TurboQuant 4/2/1-bit. */
+export type VectorFormat = "f32" | "int8" | "tq4" | "tq2" | "tq1";
 
 /** Pack metadata (manifest.json) describing how to read the pack. */
 export interface QPackManifest {

@@ -1,4 +1,9 @@
+import { lloydMaxGaussian, nearest, paddedDim, rotate, signsFromSeed } from "./turboquant";
 import type { VectorFormat } from "./types";
+
+/** TurboQuant bit depth per format. */
+const TQ_BITS: Record<string, number> = { tq4: 4, tq2: 2, tq1: 1 };
+const TQ_SEED = 0x9e3779b9;
 
 /** Encoded vectors: named binary blobs plus manifest params and a files map. */
 export interface Encoded {
@@ -56,6 +61,64 @@ export function encodeInt8(flat: Float32Array, count: number, dim: number): Enco
   };
 }
 
+/**
+ * TurboQuant: rotate, quantize each coordinate against a Gaussian codebook, and
+ * store a per-vector length scalar for asymmetric scoring. bits = 4 | 2 | 1.
+ */
+export function encodeTQ(
+  flat: Float32Array,
+  count: number,
+  dim: number,
+  bits: number,
+): Encoded {
+  const p = paddedDim(dim);
+  const signs = signsFromSeed(TQ_SEED, p);
+  const cent = lloydMaxGaussian(bits);
+  const perVecBytes = (p * bits) >> 3;
+  const packed = new Uint8Array(count * perVecBytes);
+  const alpha = new Float32Array(count);
+  const row = new Float32Array(dim);
+  // Rotated unit vectors have per-coord std ~1/sqrt(p); standardize to ~N(0,1)
+  // so the Gaussian codebook's full range of levels is actually used.
+  const sp = Math.sqrt(p);
+
+  for (let i = 0; i < count; i++) {
+    row.set(flat.subarray(i * dim, i * dim + dim));
+    const r = rotate(row, signs, p);
+
+    let ptr = i * perVecBytes;
+    let cur = 0;
+    let bitpos = 0;
+    let dotRrq = 0;
+    let dotRq = 0;
+    for (let d = 0; d < p; d++) {
+      const idx = nearest(r[d] * sp, cent);
+      cur |= idx << bitpos;
+      bitpos += bits;
+      if (bitpos === 8) {
+        packed[ptr++] = cur;
+        cur = 0;
+        bitpos = 0;
+      }
+      const c = cent[idx];
+      dotRrq += r[d] * c;
+      dotRq += c * c;
+    }
+    // length renormalization: best scalar so alpha*reconstruction matches r
+    alpha[i] = dotRq > 0 ? dotRrq / dotRq : 0;
+  }
+
+  const file = `vectors.tq${bits}.bin`;
+  const pBytes = asBytes(packed);
+  const aBytes = asBytes(alpha);
+  return {
+    blobs: { [file]: pBytes, "alpha.f32.bin": aBytes },
+    files: { vectors: file, alpha: "alpha.f32.bin" },
+    params: { bits, paddedDim: p, seed: TQ_SEED, codebook: Array.from(cent) },
+    bytes: pBytes.byteLength + aBytes.byteLength,
+  };
+}
+
 /** Dispatch encoding by format. */
 export function encode(
   format: VectorFormat,
@@ -68,6 +131,10 @@ export function encode(
       return encodeF32(flat);
     case "int8":
       return encodeInt8(flat, count, dim);
+    case "tq4":
+    case "tq2":
+    case "tq1":
+      return encodeTQ(flat, count, dim, TQ_BITS[format]);
     default:
       throw new Error(`qpack: encoder for "${format}" not implemented yet`);
   }

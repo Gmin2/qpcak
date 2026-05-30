@@ -11,17 +11,20 @@ import { loadPackDisk } from "./_loadDisk";
  */
 const K = Number(process.env.K ?? 10);
 const base = "examples/demo/public/packs";
-const formats: VectorFormat[] = ["f32", "int8"];
+const formats: VectorFormat[] = ["f32", "int8", "tq4", "tq2", "tq1"];
 
+// On-topic queries for the Qdrant docs/articles corpus (the meaningful test set).
 const queries = [
-  "how do I reset my forgotten password",
-  "set up SAML single sign-on with Okta",
-  "what is your refund policy",
-  "create an api key",
-  "do you ship internationally",
-  "how much does it cost and what discounts are there",
-  "can I rotate or revoke an api key",
-  "how long do international deliveries take",
+  "how does binary quantization work",
+  "what is scalar quantization",
+  "combine dense and sparse vectors in hybrid search",
+  "HNSW index parameters and tuning",
+  "multitenancy with payload filtering",
+  "reduce memory usage at scale",
+  "late interaction ColBERT reranking",
+  "recommendation api positive and negative examples",
+  "how to create a snapshot and restore",
+  "filtering by geo location",
 ];
 
 function dirBytes(dir: string, manifest: { files: Record<string, string> }): number {

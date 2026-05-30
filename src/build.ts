@@ -10,10 +10,22 @@ export type * from "./core/types";
 
 const EMBED_BATCH = 64;
 
-/** Index content into a static pack (manifest + payloads + vectors). */
-export async function buildPack(opts: BuildOptions): Promise<BuildResult> {
+/** Options for indexing content (everything except how/where to write the pack). */
+export type IndexOptions = Pick<BuildOptions, "source" | "model" | "qdrantUrl" | "collection" | "name">;
+
+/** The indexed corpus: docs + vectors, sourced through Qdrant when configured. */
+export interface Indexed {
+  name: string;
+  model: string;
+  dim: number;
+  docs: QPackDoc[];
+  vectors: Float32Array[];
+}
+
+/** Chunk, embed, and (optionally) round-trip content through a Qdrant origin. */
+export async function indexContent(opts: IndexOptions): Promise<Indexed> {
   const model = opts.model ?? DEFAULT_MODEL;
-  const name = opts.name ?? basename(opts.out);
+  const name = opts.name ?? "pack";
 
   const files = loadSource(opts.source);
   const docs: QPackDoc[] = [];
@@ -24,7 +36,7 @@ export async function buildPack(opts: BuildOptions): Promise<BuildResult> {
       docs.push({ id: `${file.rel}#${i}`, text, title, source: file.rel, chunk: i });
     });
   }
-  if (docs.length === 0) throw new Error(`qpack/build: no content found in ${opts.source}`);
+  if (docs.length === 0) throw new Error(`qpack: no content found in ${opts.source}`);
 
   const vectors: Float32Array[] = [];
   for (let i = 0; i < docs.length; i += EMBED_BATCH) {
@@ -33,27 +45,30 @@ export async function buildPack(opts: BuildOptions): Promise<BuildResult> {
     console.log(`  embedded ${Math.min(i + EMBED_BATCH, docs.length)}/${docs.length}`);
   }
 
-  // Qdrant is the source of truth: upsert, then export the pack back out of it.
-  let packDocs = docs;
-  let packVectors = vectors;
   if (opts.qdrantUrl) {
     const collection = opts.collection ?? name;
     const client = makeClient(opts.qdrantUrl, process.env.QDRANT_API_KEY);
     console.log(`  upserting ${docs.length} points → Qdrant "${collection}"`);
     await upsertDocs(client, collection, DIM, docs, vectors);
     const exported = await exportCollection(client, collection);
-    packDocs = exported.docs;
-    packVectors = exported.vectors;
-    console.log(`  exported ${packDocs.length} points ← Qdrant`);
+    console.log(`  exported ${exported.docs.length} points ← Qdrant`);
+    return { name, model, dim: DIM, docs: exported.docs, vectors: exported.vectors };
   }
 
+  return { name, model, dim: DIM, docs, vectors };
+}
+
+/** Index content into a static pack (manifest + payloads + vectors). */
+export async function buildPack(opts: BuildOptions): Promise<BuildResult> {
+  const name = opts.name ?? basename(opts.out);
+  const ix = await indexContent({ ...opts, name });
   const format = opts.compress ?? "f32";
   const { bytes } = writePack(
     opts.out,
-    { name, version: "v1", model, dim: DIM },
-    packDocs,
-    packVectors,
+    { name, version: "v1", model: ix.model, dim: ix.dim },
+    ix.docs,
+    ix.vectors,
     format,
   );
-  return { name, out: opts.out, count: packDocs.length, dim: DIM, bytes, vectorFormat: format };
+  return { name, out: opts.out, count: ix.docs.length, dim: ix.dim, bytes, vectorFormat: format };
 }

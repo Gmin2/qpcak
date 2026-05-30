@@ -11,10 +11,11 @@ export function topK(
   const limit = opts.limit ?? 5;
   const filter = opts.filter ?? null;
   const top: { score: number; i: number }[] = [];
+  const prepared = store.prepareQuery ? store.prepareQuery(queryVec) : queryVec;
 
   for (let i = 0; i < store.count; i++) {
     if (filter && !matchFilter(docs[i], filter)) continue;
-    const s = store.score(queryVec, i);
+    const s = store.score(prepared, i);
     if (top.length < limit) {
       insertSorted(top, s, i);
     } else if (s > top[top.length - 1].score) {

@@ -3,6 +3,7 @@ dist/
 packs/
 examples/demo/public/packs/
 qdrant_storage/
+wasm/target/
 .pnpm-store/
 .DS_Store
 *.log
