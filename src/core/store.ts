@@ -21,6 +21,10 @@ class F32Store implements VectorStore {
     public count: number,
     public dim: number,
   ) {}
+  /** The contiguous f32 vector block (count * dim), e.g. for a wasm kernel. */
+  get raw(): Float32Array {
+    return this.v;
+  }
   score(q: Float32Array, i: number): number {
     let s = 0;
     const off = i * this.dim;
@@ -44,6 +48,15 @@ class Int8Store implements VectorStore {
   }
 }
 
+/** Internals of a TQStore, exposed for the wasm kernel. */
+export interface TQInternals {
+  packed: Uint8Array;
+  alpha: Float32Array;
+  codebook: Float32Array;
+  bits: number;
+  pdim: number;
+}
+
 class TQStore implements VectorStore {
   private signs: Int8Array;
   private perVecBytes: number;
@@ -60,10 +73,12 @@ class TQStore implements VectorStore {
     this.signs = signsFromSeed(seed, p);
     this.perVecBytes = (p * bits) >> 3;
   }
+
   /** Rotate the full-precision query once into the padded, rotated space. */
   prepareQuery(query: Float32Array): Float32Array {
     return rotate(query, this.signs, this.p);
   }
+
   score(rotq: Float32Array, i: number): number {
     const base = i * this.perVecBytes;
     let s = 0;
@@ -71,6 +86,17 @@ class TQStore implements VectorStore {
       s += rotq[d] * this.codebook[readIndex(this.packed, base, d, this.bits)];
     }
     return s * this.alpha[i];
+  }
+
+  /** Buffers + params for the wasm kernel. */
+  get internals(): TQInternals {
+    return {
+      packed: this.packed,
+      alpha: this.alpha,
+      codebook: this.codebook,
+      bits: this.bits,
+      pdim: this.p,
+    };
   }
 }
 
@@ -93,7 +119,12 @@ export function makeStore(
     case "tq4":
     case "tq2":
     case "tq1": {
-      const p = manifest.params as { bits: number; paddedDim: number; seed: number; codebook: number[] };
+      const p = manifest.params as {
+        bits: number;
+        paddedDim: number;
+        seed: number;
+        codebook: number[];
+      };
       return new TQStore(
         new Uint8Array(buffers[files.vectors]),
         new Float32Array(buffers[files.alpha]),
