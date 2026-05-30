@@ -3,12 +3,17 @@ const CODE_FENCE = /```[\s\S]*?```/g;
 const HTML_TAG = /<[^>]+>/g;
 const MULTISPACE = /[ \t]+/g;
 
-/** Strip frontmatter, code fences, and HTML; normalize whitespace. */
+/** Strip frontmatter, code, HTML, and markdown markup; normalize whitespace. */
 export function cleanMarkdown(raw: string): string {
   return raw
     .replace(FRONTMATTER, "")
     .replace(CODE_FENCE, " ")
     .replace(HTML_TAG, " ")
+    .replace(/^#{1,6}\s+/gm, "") // heading markers
+    .replace(/\*\*(.+?)\*\*/g, "$1") // bold
+    .replace(/\*(.+?)\*/g, "$1") // italic
+    .replace(/`([^`]+)`/g, "$1") // inline code
+    .replace(/\[(.+?)\]\((.+?)\)/g, "$1") // links -> text
     .replace(MULTISPACE, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();

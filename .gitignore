@@ -1,6 +1,7 @@
 node_modules/
 dist/
 packs/
+examples/demo/public/packs/
 qdrant_storage/
 .pnpm-store/
 .DS_Store

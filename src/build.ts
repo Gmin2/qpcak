@@ -1,6 +1,6 @@
 import { basename } from "node:path";
 import { DEFAULT_MODEL, DIM, embed } from "./core/embed";
-import { writeF32Pack } from "./core/pack";
+import { writePack } from "./core/pack";
 import { exportCollection, makeClient, upsertDocs } from "./core/qdrant";
 import { loadSource } from "./core/source";
 import { chunkText, cleanMarkdown, deriveTitle } from "./core/text";
@@ -47,6 +47,13 @@ export async function buildPack(opts: BuildOptions): Promise<BuildResult> {
     console.log(`  exported ${packDocs.length} points ← Qdrant`);
   }
 
-  const bytes = writeF32Pack(opts.out, { name, version: "v1", model, dim: DIM }, packDocs, packVectors);
-  return { name, out: opts.out, count: packDocs.length, dim: DIM, bytes, vectorFormat: "f32" };
+  const format = opts.compress ?? "f32";
+  const { bytes } = writePack(
+    opts.out,
+    { name, version: "v1", model, dim: DIM },
+    packDocs,
+    packVectors,
+    format,
+  );
+  return { name, out: opts.out, count: packDocs.length, dim: DIM, bytes, vectorFormat: format };
 }

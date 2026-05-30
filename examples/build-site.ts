@@ -4,7 +4,7 @@ import { buildPack } from "../src/build";
 /** Set QDRANT_URL to route through a Qdrant origin; otherwise builds directly. */
 const result = await buildPack({
   source: "examples/content",
-  out: "packs/site",
+  out: "examples/demo/public/packs/site",
   name: "site",
   qdrantUrl: process.env.QDRANT_URL,
   collection: "qpack_site",

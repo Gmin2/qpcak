@@ -13,6 +13,8 @@ export interface QPackManifest {
   vectorFormat: VectorFormat;
   /** logical name -> filename within the pack */
   files: Record<string, string>;
+  /** format-specific parameters (e.g. codebook, rotation seed) */
+  params?: Record<string, unknown>;
 }
 
 /** A stored document chunk and its payload. */

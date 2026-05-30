@@ -1,9 +1,9 @@
+import type { VectorStore } from "./store";
 import type { QPackDoc, QPackHit, SearchOptions } from "./types";
 
-/** Brute-force top-k cosine search (vectors are pre-normalized, so cosine == dot). */
-export function cosineTopK(
-  vectors: Float32Array,
-  dim: number,
+/** Brute-force top-k search using the store's (possibly quantized) scoring. */
+export function topK(
+  store: VectorStore,
   docs: QPackDoc[],
   queryVec: Float32Array,
   opts: SearchOptions = {},
@@ -12,11 +12,9 @@ export function cosineTopK(
   const filter = opts.filter ?? null;
   const top: { score: number; i: number }[] = [];
 
-  for (let i = 0; i < docs.length; i++) {
+  for (let i = 0; i < store.count; i++) {
     if (filter && !matchFilter(docs[i], filter)) continue;
-    let s = 0;
-    const off = i * dim;
-    for (let d = 0; d < dim; d++) s += vectors[off + d] * queryVec[d];
+    const s = store.score(queryVec, i);
     if (top.length < limit) {
       insertSorted(top, s, i);
     } else if (s > top[top.length - 1].score) {

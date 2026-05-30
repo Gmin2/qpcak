@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { QPackDoc, QPackManifest } from "./types";
+import { encode, flatten } from "./quantize";
+import type { QPackDoc, QPackManifest, VectorFormat } from "./types";
 
 /** Metadata needed to stamp a pack manifest. */
 export interface PackMeta {
@@ -10,19 +11,29 @@ export interface PackMeta {
   dim: number;
 }
 
-/** Write an f32 pack: manifest.json, payloads.json, vectors.bin. Returns total bytes. */
-export function writeF32Pack(
+/** Result of writing a pack. */
+export interface WriteResult {
+  /** total bytes (vectors + payloads) */
+  bytes: number;
+  /** vector bytes only */
+  vectorBytes: number;
+}
+
+/** Write a pack in the given format: manifest.json, payloads.json, vector blobs. */
+export function writePack(
   outDir: string,
   meta: PackMeta,
   docs: QPackDoc[],
   vectors: Float32Array[],
-): number {
+  format: VectorFormat,
+): WriteResult {
   mkdirSync(outDir, { recursive: true });
 
-  const flat = new Float32Array(docs.length * meta.dim);
-  for (let i = 0; i < vectors.length; i++) flat.set(vectors[i], i * meta.dim);
-  const vecBuf = Buffer.from(flat.buffer);
-  writeFileSync(join(outDir, "vectors.bin"), vecBuf);
+  const flat = flatten(vectors, meta.dim);
+  const enc = encode(format, flat, docs.length, meta.dim);
+  for (const [filename, bytes] of Object.entries(enc.blobs)) {
+    writeFileSync(join(outDir, filename), bytes);
+  }
 
   const payloads = JSON.stringify(docs);
   writeFileSync(join(outDir, "payloads.json"), payloads);
@@ -34,10 +45,11 @@ export function writeF32Pack(
     dim: meta.dim,
     count: docs.length,
     metric: "cosine",
-    vectorFormat: "f32",
-    files: { vectors: "vectors.bin", payloads: "payloads.json" },
+    vectorFormat: format,
+    files: { ...enc.files, payloads: "payloads.json" },
+    params: enc.params,
   };
   writeFileSync(join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2));
 
-  return vecBuf.length + Buffer.byteLength(payloads);
+  return { bytes: enc.bytes + Buffer.byteLength(payloads), vectorBytes: enc.bytes };
 }
