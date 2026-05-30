@@ -1,0 +1,14 @@
+[package]
+name = "qpack-parity"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "parity"
+path = "src/main.rs"
+
+[dependencies]
+qpack-engine = { path = "../engine" }
+quantization = { path = "../../qdrant/lib/quantization", features = ["testing"] }
+
+[workspace]

@@ -62,27 +62,37 @@ impl Quantizer {
         packed_bytes(self.pdim, self.bits) + 4
     }
 
-    /// Pad `vec` to pdim, rotate, and rescale so the L2 norm is sqrt(pdim).
-    /// Returns the rotated/rescaled buffer and the original rotated L2 length.
+    /// Pad `vec` to pdim, rotate, and rescale so the L2 norm matches the
+    /// codebook grid. Cosine treats the length as 1.0 (inputs are unit-norm);
+    /// Dot uses the measured rotated L2. Returns the rescaled buffer and the
+    /// L2 length used for the scaling factor.
     fn preprocess(&self, vec: &[f32]) -> (Vec<f64>, f64) {
         let mut buf = vec![0.0f64; self.pdim];
         for (b, &x) in buf.iter_mut().zip(vec.iter()) {
             *b = x as f64;
         }
         self.rotation.apply(&mut buf);
-        let l2: f64 = buf.iter().map(|&x| x * x).sum::<f64>().sqrt();
-        if l2 > 0.0 {
-            let s = (self.pdim as f64).sqrt() / l2;
+        let measured: f64 = buf.iter().map(|&x| x * x).sum::<f64>().sqrt();
+        let length = match self.distance {
+            Distance::Cosine => 1.0,
+            Distance::Dot => measured,
+        };
+        if length > 0.0 {
+            let s = (self.pdim as f64).sqrt() / length;
             for v in buf.iter_mut() {
                 *v *= s;
             }
         }
-        (buf, l2)
+        let l2_for_scale = match self.distance {
+            Distance::Cosine => 1.0,
+            Distance::Dot => measured,
+        };
+        (buf, l2_for_scale)
     }
 
     /// Encode one vector into `packed codes || scaling_factor(f32 LE)`.
     pub fn encode(&self, vec: &[f32]) -> Vec<u8> {
-        let (buf, l2) = self.preprocess(vec);
+        let (buf, l2_for_scale) = self.preprocess(vec);
 
         // Pack nearest-centroid indices, LSB-first, `bits` per coordinate.
         let mut out = vec![0u8; packed_bytes(self.pdim, self.bits)];
@@ -98,13 +108,10 @@ impl Quantizer {
             bitpos += self.bits as usize;
         }
 
-        let cn = cn_sq.sqrt();
-        // Cosine treats l2 as 1.0 (inputs are unit norm); Dot keeps the real l2.
-        let l2_for_scale = match self.distance {
-            Distance::Cosine => 1.0,
-            Distance::Dot => l2,
-        };
-        let scaling = if cn > 0.0 { (l2_for_scale / cn) as f32 } else { 0.0 };
+        // Round the centroid norm to f32 before dividing, matching the
+        // reference's rounding order so the stored scaling factor is identical.
+        let cn = cn_sq.sqrt() as f32;
+        let scaling = if cn > 0.0 { l2_for_scale as f32 / cn } else { 0.0 };
         out.extend_from_slice(&scaling.to_le_bytes());
         out
     }
