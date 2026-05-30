@@ -1,5 +1,7 @@
 node_modules/
 dist/
 packs/
+qdrant_storage/
+.pnpm-store/
 .DS_Store
 *.log

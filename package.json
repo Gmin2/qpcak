@@ -39,6 +39,11 @@
   "license": "MIT",
   "devDependencies": {
     "tsup": "^8.3.5",
+    "tsx": "^4.22.3",
     "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "@qdrant/js-client-rest": "^1.18.0"
   }
 }
