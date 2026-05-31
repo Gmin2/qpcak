@@ -1,6 +1,7 @@
 //! A flat (brute-force) index over TurboQuant-encoded vectors. Holds the
 //! encoded bytes contiguously and scores a query against every vector.
 
+use crate::pack::{read_header, write_pack};
 use crate::quantizer::{Distance, Quantizer};
 
 /// One search hit: the vector's position and its score.
@@ -16,6 +17,8 @@ pub struct Index {
     data: Vec<u8>,
     stride: usize,
     count: usize,
+    bits: u8,
+    distance: Distance,
 }
 
 impl Index {
@@ -23,7 +26,7 @@ impl Index {
     pub fn new(dim: usize, bits: u8, distance: Distance) -> Self {
         let quantizer = Quantizer::new(dim, bits, distance);
         let stride = quantizer.vector_bytes();
-        Self { quantizer, data: Vec::new(), stride, count: 0 }
+        Self { quantizer, data: Vec::new(), stride, count: 0, bits, distance }
     }
 
     /// Encode and append a raw vector.
@@ -48,6 +51,29 @@ impl Index {
 
     pub fn stride(&self) -> usize {
         self.stride
+    }
+
+    pub fn dim(&self) -> usize {
+        self.quantizer.dim()
+    }
+
+    /// The concatenated encoded vector bytes.
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Serialize this index to a self-describing `.qpack` byte container.
+    pub fn to_pack_self(&self) -> Vec<u8> {
+        write_pack(self.quantizer.dim(), self.bits, self.distance, self.count, self.stride, &self.data)
+    }
+
+    /// Rebuild an index from a `.qpack` byte container.
+    pub fn from_pack(bytes: &[u8]) -> Result<Self, &'static str> {
+        let (h, offset) = read_header(bytes)?;
+        let mut idx = Index::new(h.dim, h.bits, h.distance);
+        let data = &bytes[offset..offset + h.count * h.stride];
+        idx.add_encoded(data);
+        Ok(idx)
     }
 
     /// Top-k search for a raw query vector. Returns hits sorted by score desc.

@@ -2,6 +2,7 @@
 
 mod codebook;
 mod index;
+mod pack;
 mod quantizer;
 mod rotation;
 

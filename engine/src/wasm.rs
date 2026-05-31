@@ -53,6 +53,20 @@ impl QPack {
         Ok(QPack { index: Index::new(dim, bits, distance) })
     }
 
+    /// Load an index from a serialized `.qpack` byte container.
+    #[wasm_bindgen(js_name = fromPack)]
+    pub fn from_pack(bytes: &[u8]) -> Result<QPack, JsError> {
+        Index::from_pack(bytes)
+            .map(|index| QPack { index })
+            .map_err(JsError::new)
+    }
+
+    /// Serialize the index to a `.qpack` byte container.
+    #[wasm_bindgen(js_name = toPack)]
+    pub fn to_pack(&self) -> Vec<u8> {
+        self.index.to_pack_self()
+    }
+
     /// Encode and add a raw vector to the index.
     pub fn add(&mut self, vector: &[f32]) {
         self.index.add(vector);
