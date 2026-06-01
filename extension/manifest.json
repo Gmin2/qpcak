@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "QPack Assistant",
+  "version": "0.1.0",
+  "description": "AI docs chat that runs entirely in your browser — TurboQuant retrieval + a local LLM, no backend.",
+  "action": {
+    "default_title": "QPack Assistant"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://qdrant.tech/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://qdrant.tech/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*", "packs/*"],
+      "matches": ["https://qdrant.tech/*"]
+    }
+  ]
+}

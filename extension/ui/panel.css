@@ -1,0 +1,167 @@
+/* Ask AI widget — light theme, ported from the React/Tailwind design to plain CSS. */
+.qpack-root {
+  --zinc-50: #fafafa;
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-600: #52525b;
+  --zinc-800: #27272a;
+  --zinc-900: #18181b;
+  --emerald: #10b981;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483000;
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.qpack-root svg { display: block; }
+
+/* ---- Trigger button (collapsed) ---- */
+.qpack-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: #fff;
+  color: var(--zinc-900);
+  border: 1px solid var(--zinc-200);
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.2s, transform 0.18s cubic-bezier(0.22, 1.2, 0.36, 1);
+  animation: qpack-pop 0.25s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+.qpack-trigger:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.12); transform: scale(1.04); }
+.qpack-trigger:active { transform: scale(0.96); }
+.qpack-trigger .spark { color: var(--zinc-600); animation: qpack-pulse 2s ease-in-out infinite; }
+.qpack-trigger .label { color: var(--zinc-800); }
+
+.qpack-root.open .qpack-trigger { display: none; }
+
+/* ---- Dialog card (open) ---- */
+.qpack-card {
+  display: none;
+  flex-direction: column;
+  width: 400px;
+  max-width: calc(100vw - 48px);
+  background: #fff;
+  border: 1px solid var(--zinc-200);
+  border-radius: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  color: var(--zinc-800);
+}
+.qpack-root.open .qpack-card {
+  display: flex;
+  animation: qpack-rise 0.3s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+/* header */
+.qpack-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--zinc-100);
+  background: rgba(250, 250, 250, 0.5);
+}
+.qpack-head .status { display: flex; align-items: center; gap: 8px; }
+.qpack-head .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); animation: qpack-pulse 2s ease-in-out infinite; }
+.qpack-head .status-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--zinc-400);
+}
+.qpack-head .actions { display: flex; align-items: center; gap: 4px; }
+.qpack-icon-btn {
+  display: inline-flex; padding: 6px; border: 0; background: none; color: var(--zinc-400);
+  border-radius: 8px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.qpack-icon-btn:hover { color: var(--zinc-600); background: var(--zinc-100); }
+
+/* messages */
+.qpack-msgs {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--zinc-100);
+}
+.qpack-msgs.has-msgs { display: flex; }
+.qpack-row { display: flex; align-items: flex-start; gap: 10px; }
+.qpack-row.user { justify-content: flex-end; }
+.qpack-avatar {
+  width: 28px; height: 28px; border-radius: 8px; flex: none; margin-top: 2px;
+  background: var(--zinc-100); border: 1px solid var(--zinc-200);
+  display: flex; align-items: center; justify-content: center; color: var(--zinc-600);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.qpack-bubble {
+  padding: 10px 15px; font-size: 14px; line-height: 1.55; border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); max-width: 82%; white-space: pre-wrap; word-break: break-word;
+}
+.qpack-row.user .qpack-bubble { background: var(--zinc-900); color: #fff; border-top-right-radius: 2px; }
+.qpack-row.bot .qpack-bubble { background: #fff; color: var(--zinc-800); border: 1px solid var(--zinc-200); border-top-left-radius: 2px; }
+.qpack-sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.qpack-src { font-size: 10px; color: var(--zinc-500); border: 1px solid var(--zinc-200); border-radius: 999px; padding: 2px 8px; }
+.qpack-typing { display: inline-flex; gap: 4px; align-items: center; }
+.qpack-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--zinc-400); animation: qpack-bounce 1s infinite; }
+.qpack-typing i:nth-child(1) { animation-delay: -0.3s; }
+.qpack-typing i:nth-child(2) { animation-delay: -0.15s; }
+
+/* input */
+.qpack-form { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.qpack-inputwrap {
+  border: 1px solid var(--zinc-200); border-radius: 16px; background: rgba(250, 250, 250, 0.5);
+  overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.2s, background 0.2s;
+}
+.qpack-inputwrap:focus-within { border-color: var(--zinc-400); background: #fff; }
+.qpack-inputhead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px; border-bottom: 1px solid var(--zinc-200); background: rgba(250, 250, 250, 0.7); user-select: none;
+}
+.qpack-inputhead .grounding { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--zinc-500); }
+.qpack-inputhead .grounding .spark { color: var(--zinc-400); }
+.qpack-kbds { display: flex; gap: 4px; opacity: 0.7; }
+.qpack-kbd {
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px;
+  border: 1px solid var(--zinc-200); background: #fff; border-radius: 4px;
+  font: 9px/1 ui-monospace, monospace; color: var(--zinc-400); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.qpack-input {
+  width: 100%; padding: 14px 16px; font-size: 14px; line-height: 1.55; color: var(--zinc-800);
+  background: transparent; border: 0; resize: none; outline: none; font-family: inherit;
+}
+.qpack-input::placeholder { color: var(--zinc-400); }
+.qpack-formfoot { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
+.qpack-hint { font-size: 11px; font-weight: 500; color: var(--zinc-400); }
+.qpack-btns { display: flex; gap: 8px; }
+.qpack-close-btn {
+  padding: 8px 16px; font-size: 12px; font-weight: 600; border: 0; border-radius: 12px;
+  background: var(--zinc-100); color: var(--zinc-600); cursor: pointer; transition: background 0.15s;
+}
+.qpack-close-btn:hover { background: var(--zinc-200); }
+.qpack-send {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 12px; font-weight: 600;
+  border: 0; border-radius: 12px; background: var(--zinc-900); color: #fff; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); transition: background 0.15s;
+}
+.qpack-send:hover { background: var(--zinc-800); }
+.qpack-send:disabled { background: var(--zinc-100); color: var(--zinc-400); cursor: not-allowed; }
+
+/* animations */
+@keyframes qpack-pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes qpack-rise { from { opacity: 0; transform: scale(0.92) translateY(15px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes qpack-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes qpack-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .qpack-trigger, .qpack-card, .qpack-spark, .dot, .qpack-typing i { animation: none !important; }
+}
