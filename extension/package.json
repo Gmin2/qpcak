@@ -7,6 +7,10 @@
     "build": "vite build",
     "dev": "vite build --watch"
   },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "@mlc-ai/web-llm": "^0.2.84"
+  },
   "devDependencies": {
     "@types/chrome": "^0.0.287",
     "vite": "^8.0.14"

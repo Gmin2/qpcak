@@ -36,7 +36,7 @@ export const WIDGET_HTML = `
             <kbd class="qpack-kbd">enter</kbd>
           </div>
         </div>
-        <textarea class="qpack-input" id="qpack-input" rows="4" placeholder="Ask about the docs…"></textarea>
+        <textarea class="qpack-input" id="qpack-input" rows="2" placeholder="Ask about the docs…"></textarea>
       </div>
       <div class="qpack-formfoot">
         <div class="qpack-hint" id="qpack-hint">Private &amp; offline · Cmd+J to toggle</div>

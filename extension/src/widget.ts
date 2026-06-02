@@ -2,9 +2,15 @@
 
 const SPARK_AVATAR = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>`;
 
+export interface Source {
+  label: string;
+  url?: string;
+}
 export interface AskHandlers {
   onToken: (t: string) => void;
-  addSources: (s: string[]) => void;
+  addSources: (s: Source[]) => void;
+  /** Show a single, replaceable status line (e.g. model download progress). */
+  onStatus: (text: string) => void;
 }
 export type OnAsk = (question: string, handlers: AskHandlers) => Promise<void>;
 
@@ -110,6 +116,13 @@ export function initWidget(root: ParentNode, onAsk: OnAsk, copy: WidgetCopy = {}
       let text = "";
       let first = true;
       await onAsk(question, {
+        onStatus: (status) => {
+          if (first) {
+            bot.innerHTML = `<span class="qpack-typing"><i></i><i></i><i></i></span> <span class="qpack-statustext"></span>`;
+            bot.querySelector(".qpack-statustext")!.textContent = status;
+            msgs.scrollTop = msgs.scrollHeight;
+          }
+        },
         onToken: (t) => {
           if (first) {
             bot.textContent = "";
@@ -121,12 +134,21 @@ export function initWidget(root: ParentNode, onAsk: OnAsk, copy: WidgetCopy = {}
         },
         addSources: (sources) => {
           if (!sources?.length) return;
+          const label = document.createElement("div");
+          label.className = "qpack-srclabel";
+          label.textContent = "Sources";
+          bot.appendChild(label);
           const wrap = document.createElement("div");
           wrap.className = "qpack-sources";
           for (const s of sources) {
-            const chip = document.createElement("span");
+            const chip = document.createElement(s.url ? "a" : "span");
             chip.className = "qpack-src";
-            chip.textContent = s;
+            chip.textContent = s.label;
+            if (s.url && chip instanceof HTMLAnchorElement) {
+              chip.href = s.url;
+              chip.target = "_blank";
+              chip.rel = "noopener noreferrer";
+            }
             wrap.appendChild(chip);
           }
           bot.appendChild(wrap);
