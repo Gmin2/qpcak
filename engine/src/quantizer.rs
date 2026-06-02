@@ -116,37 +116,75 @@ impl Quantizer {
         out
     }
 
-    /// Rotate a query once for repeated scoring (pad → rotate, full precision).
-    pub fn prepare_query(&self, query: &[f32]) -> Vec<f64> {
+    /// Rotate a query once for repeated scoring (pad → rotate). Kept as f32 so
+    /// the score loop can use wasm SIMD lanes directly.
+    pub fn prepare_query(&self, query: &[f32]) -> Vec<f32> {
         let mut buf = vec![0.0f64; self.pdim];
         for (b, &x) in buf.iter_mut().zip(query.iter()) {
             *b = x as f64;
         }
         self.rotation.apply(&mut buf);
-        buf
+        buf.iter().map(|&x| x as f32).collect()
+    }
+
+    /// Centroid index for coordinate `d` from the bit-packed codes.
+    #[inline]
+    fn idx_at(&self, packed: &[u8], d: usize) -> usize {
+        let bitpos = d * self.bits as usize;
+        let mask = (1u8 << self.bits) - 1;
+        ((packed[bitpos / 8] >> (bitpos % 8)) & mask) as usize
     }
 
     /// Asymmetric score of a prepared (rotated) query against a stored vector.
-    pub fn score(&self, rotated_query: &[f64], stored: &[u8]) -> f32 {
+    pub fn score(&self, rotated_query: &[f32], stored: &[u8]) -> f32 {
         let pbytes = packed_bytes(self.pdim, self.bits);
         let scaling = f32::from_le_bytes([
             stored[pbytes],
             stored[pbytes + 1],
             stored[pbytes + 2],
             stored[pbytes + 3],
-        ]) as f64;
+        ]);
+        self.dot(rotated_query, &stored[..pbytes]) * scaling
+    }
 
-        let mask = (1u8 << self.bits) - 1;
-        let mut dot = 0.0f64;
-        let mut bitpos = 0usize;
+    /// Dot of the rotated query against the stored centroids (scalar path).
+    #[cfg(not(target_feature = "simd128"))]
+    fn dot(&self, q: &[f32], packed: &[u8]) -> f32 {
+        let mut dot = 0.0f32;
         for d in 0..self.pdim {
-            let byte = bitpos / 8;
-            let shift = bitpos % 8;
-            let idx = ((stored[byte] >> shift) & mask) as usize;
-            dot += rotated_query[d] * self.centroids[idx] as f64;
-            bitpos += self.bits as usize;
+            dot += q[d] * self.centroids[self.idx_at(packed, d)];
         }
-        (dot * scaling) as f32
+        dot
+    }
+
+    /// Dot of the rotated query against the stored centroids (wasm SIMD path).
+    /// The centroid gather is scalar; the multiply-accumulate runs 4 lanes wide.
+    #[cfg(target_feature = "simd128")]
+    fn dot(&self, q: &[f32], packed: &[u8]) -> f32 {
+        use core::arch::wasm32::*;
+        let mut acc = f32x4_splat(0.0);
+        let c = self.centroids;
+        let mut d = 0;
+        while d + 4 <= self.pdim {
+            let cv = f32x4(
+                c[self.idx_at(packed, d)],
+                c[self.idx_at(packed, d + 1)],
+                c[self.idx_at(packed, d + 2)],
+                c[self.idx_at(packed, d + 3)],
+            );
+            let qv = f32x4(q[d], q[d + 1], q[d + 2], q[d + 3]);
+            acc = f32x4_add(acc, f32x4_mul(qv, cv));
+            d += 4;
+        }
+        let mut dot = f32x4_extract_lane::<0>(acc)
+            + f32x4_extract_lane::<1>(acc)
+            + f32x4_extract_lane::<2>(acc)
+            + f32x4_extract_lane::<3>(acc);
+        while d < self.pdim {
+            dot += q[d] * c[self.idx_at(packed, d)];
+            d += 1;
+        }
+        dot
     }
 
     pub fn dim(&self) -> usize {
