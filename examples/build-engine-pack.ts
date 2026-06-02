@@ -17,6 +17,7 @@ const outDir = process.env.OUT ?? "examples/demo/public/packs/engine";
 const ix = await indexContent({
   source,
   name: "engine",
+  sitemap: process.env.SITEMAP,
   qdrantUrl: process.env.QDRANT_URL,
   collection: "qpack_site",
 });
