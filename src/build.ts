@@ -2,6 +2,7 @@ import { basename } from "node:path";
 import { DEFAULT_MODEL, DIM, embed } from "./core/embed";
 import { writePack } from "./core/pack";
 import { exportCollection, makeClient, upsertDocs } from "./core/qdrant";
+import { fetchSitemap, indexSitemap, resolveUrl } from "./core/sitemap";
 import { loadSource } from "./core/source";
 import { chunkText, cleanMarkdown, deriveTitle } from "./core/text";
 import type { BuildOptions, BuildResult, QPackDoc } from "./core/types";
@@ -11,7 +12,10 @@ export type * from "./core/types";
 const EMBED_BATCH = 64;
 
 /** Options for indexing content (everything except how/where to write the pack). */
-export type IndexOptions = Pick<BuildOptions, "source" | "model" | "qdrantUrl" | "collection" | "name">;
+export type IndexOptions = Pick<
+  BuildOptions,
+  "source" | "model" | "qdrantUrl" | "collection" | "name" | "sitemap"
+>;
 
 /** The indexed corpus: docs + vectors, sourced through Qdrant when configured. */
 export interface Indexed {
@@ -27,16 +31,39 @@ export async function indexContent(opts: IndexOptions): Promise<Indexed> {
   const model = opts.model ?? DEFAULT_MODEL;
   const name = opts.name ?? "pack";
 
+  // Resolve real URLs from the site's sitemap so links never 404.
+  let urlIndex: Map<string, string> | undefined;
+  if (opts.sitemap) {
+    urlIndex = indexSitemap(await fetchSitemap(opts.sitemap));
+    console.log(`  loaded ${urlIndex.size} URLs from sitemap`);
+  }
+
   const files = loadSource(opts.source);
   const docs: QPackDoc[] = [];
+  let matched = 0;
+  let skipped = 0;
   for (const file of files) {
+    // Skip snippet/index fragments — not real pages, and noise in results.
+    if (/(^|\/)(_index|index)\.md$/i.test(file.rel) || /headless|snippets/i.test(file.rel)) {
+      skipped++;
+      continue;
+    }
+    const url = urlIndex ? resolveUrl(urlIndex, file.rel) : undefined;
+    // When using a sitemap, only index pages that have a real URL (drops
+    // orphan fragments that would otherwise surface as junk sources).
+    if (urlIndex && !url) {
+      skipped++;
+      continue;
+    }
+    if (url) matched++;
     const title = deriveTitle(file.text, file.rel);
     const body = cleanMarkdown(file.text);
     chunkText(body).forEach((text, i) => {
-      docs.push({ id: `${file.rel}#${i}`, text, title, source: file.rel, chunk: i });
+      docs.push({ id: `${file.rel}#${i}`, text, title, source: file.rel, chunk: i, url });
     });
   }
   if (docs.length === 0) throw new Error(`qpack: no content found in ${opts.source}`);
+  if (urlIndex) console.log(`  matched ${matched} pages · skipped ${skipped} fragments · ${docs.length} chunks`);
 
   const vectors: Float32Array[] = [];
   for (let i = 0; i < docs.length; i += EMBED_BATCH) {

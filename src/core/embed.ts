@@ -8,7 +8,8 @@ const extractors = new Map<string, Promise<unknown>>();
 
 function getExtractor(model: string): Promise<unknown> {
   if (!extractors.has(model)) {
-    extractors.set(model, pipeline("feature-extraction", model));
+    // Pin dtype fp32 so build-time and browser-time embeddings match exactly.
+    extractors.set(model, pipeline("feature-extraction", model, { dtype: "fp32" }));
   }
   return extractors.get(model)!;
 }

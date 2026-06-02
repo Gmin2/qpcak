@@ -1,8 +1,11 @@
 {
-  "name": "qpack",
-  "version": "0.0.1",
-  "description": "Embeddable, backend-free AI search & chat for any site. Index content into a tiny Qdrant-powered pack; search it locally in the browser.",
+  "name": "qpcak",
+  "version": "0.1.0",
+  "description": "Backend-free semantic search for any site. Index content into a tiny TurboQuant-compressed pack and search it locally in the browser — no server, no per-query cost.",
   "type": "module",
+  "bin": {
+    "qpcak": "dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -11,18 +14,15 @@
     "./build": {
       "types": "./dist/build.d.ts",
       "import": "./dist/build.js"
-    },
-    "./widget": {
-      "types": "./dist/widget.d.ts",
-      "import": "./dist/widget.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",
-    "demo": "vite examples/demo",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -30,18 +30,21 @@
     "vector-search",
     "semantic-search",
     "embeddings",
-    "rag",
-    "chatbot",
+    "turboquant",
+    "wasm",
     "browser",
     "offline",
-    "turboquant"
+    "rag",
+    "quantization"
   ],
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "tsup": "^8.3.5",
     "tsx": "^4.22.3",
-    "typescript": "^5.7.2",
-    "vite": "^8.0.14"
+    "typescript": "^5.7.2"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",

@@ -62,6 +62,8 @@ export interface BuildOptions {
   qdrantUrl?: string;
   /** Qdrant collection name */
   collection?: string;
+  /** Sitemap URL; resolves each chunk's clickable `url` (no 404s). */
+  sitemap?: string;
 }
 
 /** Summary returned after a build. */

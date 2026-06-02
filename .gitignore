@@ -11,3 +11,11 @@ engine/target/
 engine/pkg/
 engine/pkg-node/
 parity/target/
+extension/public/ort/
+extension/public/packs/
+extension/dist/
+site/dist/
+.fastembed_cache/
+.hf/
+.venv/
+qdrant_storage/
