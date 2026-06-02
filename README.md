@@ -1,11 +1,17 @@
-# qpack
+# qpcak
+
+[![npm](https://img.shields.io/npm/v/qpcak.svg)](https://www.npmjs.com/package/qpcak)
+[![npm downloads](https://img.shields.io/npm/dm/qpcak.svg)](https://www.npmjs.com/package/qpcak)
+[![license](https://img.shields.io/npm/l/qpcak.svg)](./LICENSE)
 
 **The WebAssembly browser layer for Qdrant.** Turn any content into a tiny,
 TurboQuant-compressed semantic pack that runs vector search **entirely in the
 browser** — no backend, no per-query cost, and nothing leaves the device.
 
+> 📦 Published on npm: **[`qpcak`](https://www.npmjs.com/package/qpcak)** — `npm install qpcak`
+
 Qdrant has Cloud, the OSS server, and Edge (native devices) — but no browser
-story. `qpack` is that missing tier: it runs Qdrant 1.18's **TurboQuant**
+story. `qpcak` is that missing tier: it runs Qdrant 1.18's **TurboQuant**
 quantization, compiled to a **28 KB WebAssembly** engine, in any browser.
 
 ![qpcak architecture](architecture.png)
